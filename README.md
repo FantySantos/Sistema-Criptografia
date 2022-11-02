@@ -1,5 +1,5 @@
 ## Projeto 2: Sistema Desktop
-### Tema: Sistema de criptografia de mensagem com chave pública
+### Tema: Sistema de criptografia de mensagem com chave pública.
 #### Equipe:
 - Fantiny Santos dos Santos
 - Ilana Thaise da Silva Pereira
