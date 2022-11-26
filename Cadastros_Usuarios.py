@@ -11,10 +11,10 @@ def creat_db():
     banco.close()
 
 def cadastro_usuario():
-    nome = input('\nNome completo: ')
-    login = input('Nome de usuário: ')
-    senha = input('Senha: ')
-    confirmacao_senha = input('Confirme a senha: ')
+    nome = input('\n\033[32mNome completo: \033[m')
+    login = input('\033[32mNome de usuário: \033[m')
+    senha = input('\033[32mSenha: \033[m')
+    confirmacao_senha = input('\033[32mConfirme a senha: \033[m')
 
     if (senha == confirmacao_senha):
         try:
@@ -22,27 +22,25 @@ def cadastro_usuario():
             cursor = banco.cursor()
             cursor.execute("SELECT login FROM cadastro WHERE login = :user", {'user':login})
             if cursor.fetchall():
-                print("Nome de usuário já cadastrado.")
+                print("\n\033[31mNome de usuário já cadastrado.\033[m")
 
             else:
                 hash_senha = bcrypt.hashpw(senha.encode('utf-8'), bcrypt.gensalt())
                 cursor.execute("INSERT INTO cadastro VALUES (?, ?, ?)", (nome, login, hash_senha))
                 banco.commit()
                 banco.close()
-                print('Usuário cadastrado com sucesso!')
-                return True
+                print('\n\033[32mUsuário cadastrado com sucesso!\033[m')
 
         except sqlite3.Error as erro:
-            print("Erro ao inserir os dados.", erro)
+            print("\n\033[31mErro ao inserir os dados.\033[m", erro)
     else:
-        print("As senhas digitadas estão diferentes.")
+        print("\n\033[31mAs senhas digitadas estão diferentes.\033[m")
 
 
 def login():
-    usuario = input('\nNome de usuário: ')
-    senha = input('Senha: ')
+    usuario = input('\n\033[32mNome de usuário: \033[m')
+    senha = input('\033[32mSenha: \033[m')
 
-    
     try:
         banco = sqlite3.connect(db) 
         cursor = banco.cursor()
@@ -54,17 +52,18 @@ def login():
             return True, usuario
 
         else:
-            print('Senha incorreta.')
+            print('\n\033[31mSenha incorreta.\033[m')
+            return False, ''
     
     except sqlite3.Error as erro:
-        print("Erro no login.", erro)
+        print("\n\033[31mErro no login.\033[m", erro)
 
     except IndexError as erro:
-        print('Usuário não cadastrado!')
+        print('\n\033[31mUsuário não cadastrado!\033[m')
     
 def remove_usuario():
-    usuario = input('\nConfirme seu nome de usuário: ')
-    senha = input('Confirme sua senha: ')
+    usuario = input('\n\033[32mConfirme seu nome de usuário: \033[m')
+    senha = input('\033[32mConfirme sua senha: \033[m')
 
     banco = sqlite3.connect(db) 
     cursor = banco.cursor()
@@ -76,8 +75,8 @@ def remove_usuario():
         banco.commit()
         banco.close()
 
-        print('Usuário removido com sucesso.')
+        print('\n\033[32mUsuário removido com sucesso.\033[m')
         return True
 
     else:
-        print('Senha incorreta.')
+        print('\n\033[31mSenha incorreta.\033[m')

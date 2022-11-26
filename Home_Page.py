@@ -1,8 +1,7 @@
 from Cadastros_Usuarios import cadastro_usuario, login, remove_usuario
 
 def em_construção():
-    return print(
-    '''
+    return print('''
 
     Em construção...
 
@@ -12,89 +11,85 @@ def em_construção():
              | \\  //           :,   ./
      |_______|__|_//            ;:; /
     _L_____________\o           ;;;/
-____(CCCCCCCCCCCCCC)____________-/_____________________
+____(CCCCCCCCCCCCCC)____________-/_______________
 
-    '''
-    )
+    ''')
 
 def menu_inicial():
-    return input('''
+    return int(input('''
             Bem vindo!!
-        Escolha uma opção:
+        
     [1] Cadastrar usuário.
     [2] Fazer login.
     [3] Recuperar senha.
-    [4] Sair.
-        
-    ''')
+    [0] Sair.
+
+    Escolha uma opção: '''))
 
 def menu_login(user):
-    return input(f'''
+    return int(input(f'''
             Olá, {user}!
-        Escolha uma opção:
+        
     [1] Criptografar.
     [2] Descriptografar.
     [3] Configurações.
-    [4] Voltar.
-        
-    ''')
+    [0] Voltar.
+    
+    Escolha uma opção: '''))
 
 def menu_confirguracao():
-    return input('''
+    return int(input('''
             Configurações.
         Escolha uma opção:
     [1] Editar usuário.
     [2] Excluir usuário.
-    [3] Voltar.
-        
-    ''')
+    [0] Voltar.
+    
+    Escolha uma opção: '''))
 
 
 def controle_menu_inicial():
     controle = menu_inicial()
 
-    while controle != '4':
-        if controle == '1':
-            if cadastro_usuario():
-                controle_menu_inicial()
-        elif controle == '2':
+    while True:
+        if controle == 1:
+            cadastro_usuario()
+        elif controle == 2:
             login_user, user = login()
             if login_user:
                 controle_menu_login(user)
-        elif controle == '3':
+        elif controle == 3:
             em_construção()
         else:
             print('Valor inválido.')
-        controle = menu_inicial()
-    
+
     print('Programa finalizado!')
 
 
 def controle_menu_login(user):
     controle = menu_login(user)
 
-    while controle != '4':
-        if controle == '1':
+    while True:
+        if controle == 1:
             em_construção()
-        elif controle == '2':
+        elif controle == 2:
             em_construção()
-        elif controle == '3':
-            controle_configuracao()
+        elif controle == 3:
+            controle_menu_login()
         else:
             print('Valor inválido.')
-
         controle = menu_login(user)
 
 def controle_configuracao():
     controle = menu_confirguracao()
 
-    while controle != '3':
-        if controle == '1':
-            em_construção()
-        elif controle == '2':
-            if remove_usuario():
-                controle_menu_inicial()
-        else:
-            print('Valor inválido.')
+    if controle == 1:
+        em_construção()
+        controle_configuracao()
 
-        controle = menu_confirguracao()
+    elif controle == 2:
+        if not remove_usuario():
+            controle_configuracao()
+    else:
+        print('Valor inválido.')
+        controle_configuracao()

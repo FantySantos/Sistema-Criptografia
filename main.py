@@ -1,6 +1,6 @@
-from Home_Page import controle_menu_inicial
+from Home_Page_V2 import menu_inicial
 from Cadastros_Usuarios import creat_db
 
 
 creat_db()
-controle_menu_inicial()
+menu_inicial()
