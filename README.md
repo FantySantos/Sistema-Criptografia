@@ -8,7 +8,7 @@
 #### Tecnologia mínima que deve ser utilizada:
 - https://flet.dev/
 - https://docs.python.org/3/library/sqlite3.html
-- alguma lib algoritmo simétrico AES
+- https://pycryptodome.readthedocs.io/en/latest/src/cipher/aes.html?highlight=AES
 
 #### Funcionalidades mínimas:
 - Cadastro de usuário com geração de chaves

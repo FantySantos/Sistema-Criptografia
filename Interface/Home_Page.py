@@ -1,5 +1,6 @@
-from menu import menu, em_construção, cabecalho
-from Cadastros_Usuarios import cadastro_usuario, login, remove_usuario
+from Interface.Menu import menu, cabecalho
+from Gerenciamento_Usuário.Cadastros_Usuarios import cadastro_usuario, login, remove_usuario, editar_usuario, recuperar_senha
+from Sistema_Criptografia.Criptografia import run_encrypt, run_decrypt
 from time import sleep
 
 op_inicial = ['Cadastrar usuário', 'Fazer login', 'Recuperar senha', 'Sair do sistema']
@@ -12,44 +13,45 @@ def menu_inicial():
         if controle == 1:
             cadastro_usuario()
         elif controle == 2:
-            login_user, user = login()
+            login_user, user, key = login()
             if login_user:
-                menu_login(user)
+                menu_login(user, key)
         elif controle == 3:
-            em_construção()
+            recuperar_senha()
         elif controle == 4:
             cabecalho('Saindo do sistema... Até logo!')
             break
         else:
-            print('\033[31ERRO! Digite uma opção válida!\033[m')
+            print('\n\033[31mERRO! Digite uma opção válida!\033[m')
         sleep(2)
 
-def menu_login(user):
+def menu_login(user, key):
     while True:
         controle = menu(f'BEM VINDO {user}', op_login)
         if controle == 1:
-            em_construção()
+            run_encrypt(key)
         elif controle == 2:
-            em_construção()
+            run_decrypt()
         elif controle == 3:
-            menu_conta()
-            break
+            if menu_conta(user):
+                break
         elif controle == 4:
             break
         else:
-            print('\033[31ERRO! Digite uma opção válida!\033[m')
+            print('\n\033[31mERRO! Digite uma opção válida!\033[m')
         sleep(2)
 
-def menu_conta():
+def menu_conta(user):
     while True:
         controle = menu('CONTA', op_conta)
         if controle == 1:
-            em_construção()
+            if editar_usuario(user):
+                return True
         elif controle == 2:
-            if remove_usuario():
-                break
+            if remove_usuario(user):
+                return True
         elif controle == 3:
-            break
+            return False
         else:
-            print('\033[31ERRO! Digite uma opção válida!\033[m')
+            print('\n\033[31mERRO! Digite uma opção válida!\033[m')
         sleep(2)
