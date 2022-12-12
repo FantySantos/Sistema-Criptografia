@@ -1,171 +1,165 @@
 import sqlite3 as sq
 import bcrypt
-from secrets import token_bytes
-from getpass import getpass
+from Crypto.Random import get_random_bytes
+import re
+import time
+import smtplib, ssl
+import random
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 db = 'Gerenciamento_Usuário/banco_cadastro.db'
 
 def creat_db():
     banco = sq.connect(db)
     cursor = banco.cursor()
-    cursor.execute("CREATE TABLE IF NOT EXISTS cadastro (nome, login, pergunta, resposta, senha, key)")
+    cursor.execute("CREATE TABLE IF NOT EXISTS cadastro (login, email, senha, key, code)")
     banco.commit()
     banco.close()
 
-def verifica_usuario(cursor, usuario, usuario_att='', editar=False):
-    cursor.execute("SELECT login FROM cadastro WHERE login = :user", {'user':usuario_att})
-    usuario_db = cursor.fetchall()
+def verifica(dado, select_where):
+    banco = sq.connect(db)
+    cursor = banco.cursor()
+    cursor.execute(f"SELECT {select_where} FROM cadastro WHERE {select_where} = :dado", {'dado':dado})
+    dado_db = cursor.fetchall()
+    banco.commit()
+    banco.close()
 
-    if usuario_db:
-        if not editar:
-            print("\n\033[31mERRO! Nome de usuário já cadastrado.\033[m")
-            return True
-        if usuario_att != usuario:
-            print("\n\033[31mERRO! Nome de usuário já cadastrado.\033[m")
-            return True
+    if dado_db:
+        return False
+    return True
+
+def verifica_usuario_att(usuario, usuario_novo, select_where = "login"):
+    banco = sq.connect(db)
+    cursor = banco.cursor()
+    cursor.execute(f"SELECT {select_where} FROM cadastro WHERE {select_where} = :dado", {'dado':usuario_novo})
+    usuario_db = cursor.fetchall()
+    banco.commit()
+    banco.close()
+
+    if not usuario_db or usuario == usuario_novo:
+        return True
     return False
 
-def verifica_senha(cursor, usuario, senha):
-    cursor.execute("SELECT senha FROM cadastro WHERE login = :user", {'user':usuario})
-    senha_db = cursor.fetchall()
-    if senha_db:
-        if bcrypt.checkpw(senha.encode(), senha_db[0][0]):
-            return True
-        print('\n\033[31mERRO! Senha incorreta.\033[m')
-        return False
-    print('\n\033[31mERRO! Usuário não cadastrado!\033[m')
+def verifica_senha_code(usuario, senha_code, select = "senha", where = "login"):
+    banco = sq.connect(db)
+    cursor = banco.cursor()
+    cursor.execute(f"SELECT {select} FROM cadastro WHERE {where} = :user", {'user':usuario})
+    senha_code_db = cursor.fetchall()
+    banco.commit()
+    banco.close()
+    if senha_code_db and bcrypt.checkpw(senha_code.encode(), senha_code_db[0][0]):
+        return True
+    return False
+
+def valid_email(email):
+    regex_email = re.compile(r"(?:\w+[\.\-\_]?[\w]*@[\w]+[\.\-][\w]+(?:[\.\-][\w]+)*)")
+    email_valid = re.fullmatch(regex_email, email)
+    if email_valid:
+        return True
     return False
 
 def hash(dado):
     return bcrypt.hashpw(dado.encode(), bcrypt.gensalt())
 
-def cadastro_usuario():
-    nome = input('\n\033[32mNome completo: \033[m')
-    login = input('\033[32mNome de usuário: \033[m')
-    pergunta_seguranca = input("\033[32mDigite uma pergunta de segurança: \033[m").capitalize()
-    resposta_seguranca = getpass(prompt='\033[32mResposta: \033[m').lower()
-    senha = getpass(prompt='\033[32mSenha: \033[m')
-    confirmacao_senha = getpass(prompt='\033[32mConfirme a senha: \033[m')
-
-    if senha == confirmacao_senha:
-        try:
-            banco = sq.connect(db)
-            cursor = banco.cursor()
-            usuario_verificado = verifica_usuario(cursor, login)
-
-            if not usuario_verificado:
-                key = token_bytes(16)
-                hash_senha, hash_resosta = hash(senha), hash(resposta_seguranca)
-                cursor.execute("INSERT INTO cadastro VALUES (?, ?, ?, ?, ?, ?)",
-                (nome, login, pergunta_seguranca, hash_resosta, hash_senha, key))
-                print('\n\033[36mUsuário cadastrado com sucesso!\033[m')
-            banco.commit()
-            banco.close()
-
-        except sq.Error as erro:
-            print("\n\033[31mErro ao inserir os dados.\033[m", erro)
-    else:
-        print("\n\033[31mERRO! As senhas digitadas estão diferentes.\033[m")
-
-def login():
-    usuario = input('\n\033[32mNome de usuário: \033[m')
-    senha = getpass(prompt='\033[32mSenha: \033[m')
-
-    try:
-        banco = sq.connect(db) 
+def cadastro_usuario(login, email, senha, confirm_senha):
+    if senha == confirm_senha:
+        banco = sq.connect(db)
         cursor = banco.cursor()
-        senha_verificada = verifica_senha(cursor, usuario, senha)
-
-        if senha_verificada:
-            cursor.execute("SELECT key FROM cadastro WHERE login = :user", {'user':usuario})
-            key_db = cursor.fetchall()
-            banco.commit()
-            banco.close()
-            return True, usuario, key_db[0][0]
-
-        else:
-            return False, '', ''
-    
-    except sq.Error as erro:
-        print("\n\033[31mErro no login.\033[m", erro)
-
-def remove_usuario(usuario):
-    senha = input('\033[32mConfirme sua senha: \033[m')
-
-    banco = sq.connect(db) 
-    cursor = banco.cursor()
-    senha_verificada = verifica_senha(cursor, usuario, senha)
-
-    if senha_verificada:
-        cursor.execute("DELETE FROM cadastro WHERE login = :user", {'user':usuario})
+        key = get_random_bytes(16)
+        hash_senha = hash(senha)
+        cursor.execute("INSERT INTO cadastro VALUES (?, ?, ?, ?, ?)",
+        (login, email, hash_senha, key, None))
         banco.commit()
         banco.close()
-        print('\n\033[36mUsuário removido com sucesso.\033[m')
         return True
+    return False
 
-def editar_usuario(usuario):
-    nome_att = input('\n\033[32mDigite seu nome completo: \033[m')
-    usuario_att = input('\033[32mDigite seu novo nome de usuário: \033[m')
-    pergunta_att = input('\033[32mDigite uma nova pergunta de segurança: \033[m')
-    resposta_att = getpass(prompt='\033[32mDigite a resposta: \033[m').lower()
-    senha_atual = getpass(prompt='\033[32mDigite sua senha: \033[m')
-    nova_senha = getpass(prompt='\033[32mDigite sua nova senha: \033[m')
-    confirme_nova_senha = getpass(prompt='\033[32mConfirme sua nova senha: \033[m')
-
-    banco = sq.connect(db) 
+def dado(dado, select, where):
+    banco = sq.connect(db)
     cursor = banco.cursor()
-    senha_verificada = verifica_senha(cursor, usuario, senha_atual)
-    usuario_verificado = verifica_usuario(cursor, usuario, usuario_att, True)
-
-    if senha_verificada and nova_senha == confirme_nova_senha and not usuario_verificado:
-        hash_senha_att, hash_resposta_att = hash(nova_senha), hash(resposta_att)
-        cursor.execute("UPDATE cadastro SET nome = ?, login = ?, pergunta = ?, resposta = ?, senha = ? WHERE login = ?",
-        (nome_att, usuario_att, pergunta_att, hash_resposta_att, hash_senha_att, usuario))
-        banco.commit()
-        banco.close()
-        print('\n\033[36mUsuário atualizado com sucesso.\033[m')
-        return True
-    
-    elif nova_senha != confirme_nova_senha:
-        print('\n\033[31mERRO! As senhas digitadas estão diferentes.\033[m')
-
+    cursor.execute(f"SELECT {select} FROM cadastro WHERE {where} = :dado", {'dado': dado})
+    dado_db = cursor.fetchall()
     banco.commit()
     banco.close()
 
-def pergunta_seguranca():
-    usuario = input('\n\033[32mDigite seu nome de usuário: \033[m')
+    if dado_db:
+        return dado_db[0][0]
+    return ''
 
-    try:
-        banco = sq.connect(db) 
-        cursor = banco.cursor()
-        cursor.execute("SELECT pergunta, resposta FROM cadastro WHERE login = :user", {'user':usuario})
-        pergunta_resposta_db = cursor.fetchall()
-        banco.commit()
-        banco.close()
+def remove_usuario(usuario):
+    where = "email" if valid_email(usuario) else "login"
+    banco = sq.connect(db)
+    cursor = banco.cursor()
+    cursor.execute(f"DELETE FROM cadastro WHERE {where} = :user", {'user':usuario})
+    banco.commit()
+    banco.close()
+    return True
 
-        resposta = getpass(prompt=f'\033[32m{pergunta_resposta_db[0][0]} \033[m').lower()
-        if bcrypt.checkpw(resposta.encode(), pergunta_resposta_db[0][1]):
-            return True, usuario
-        print('\n\033[31mERRO! A resposta está errada.\033[m')
-        return False, ''
+def editar_usuario(usuario, usuario_novo, senha_nova, email_novo):
+    hash_senha_att = hash(senha_nova)
+    banco = sq.connect(db)
+    cursor = banco.cursor()
+    cursor.execute("UPDATE cadastro SET login = ?, email = ?, senha = ? WHERE login = ?",
+    (usuario_novo, email_novo, hash_senha_att, usuario))
+    banco.commit()
+    banco.close()
+    return True
 
-    except IndexError:
-        print('\n\033[31mERRO! Nome de usuário não cadastrado.\033[m')
-        return False, ''
+def code_db(usuario, code):
+    code = hash(code)
+    atualiza_db(usuario, code)
+    time.sleep(40)
+    atualiza_db(usuario, None)
 
-def recuperar_senha():
-    pergunta_validacao, usuario = pergunta_seguranca()
+def atualiza_db(user, att, set = "code"):
+    if set == "senha":
+        att = hash(att)
+    banco = sq.connect(db)
+    cursor = banco.cursor()
+    cursor.execute(f"UPDATE cadastro SET {set} = ? WHERE login = ?", (att, user))
+    banco.commit()
+    banco.close()
 
-    if pergunta_validacao:
-        nova_senha = getpass(prompt='\033[32mDigite sua nova senha: \033[m')
-        confirme_nova_senha = getpass(prompt='\033[32mConfirme sua nova senha: \033[m')
-        if nova_senha == confirme_nova_senha:
-            hash_senha_nova = hash(nova_senha)
-            banco = sq.connect(db) 
-            cursor = banco.cursor()
-            cursor.execute("UPDATE cadastro SET senha = ? WHERE login = ?", (hash_senha_nova, usuario))
-            banco.commit()
-            banco.close()
-            print('\n\033[36mSenha redefinida com sucesso.\033[m')
-        else:
-            print('\n\033[31mERRO! As senhas digitadas estão diferentes.\033[m')
+def code_email(usuario, receiver_email):
+    code = ''.join([str(random.randint(0, 9)) for qtd in range(6)])
+    smtp_server  = "smtp.office365.com"
+    port = 587
+    sender_email  = "sistema.criptografia@hotmail.com"
+    password = "602Nf#6j"
+
+    message = MIMEMultipart("alternative")
+    message["Subject"] = "Sistema de Criptografia: Redefinir senha"
+    message["From"] = sender_email
+    message["To"] = receiver_email
+    text = f'''\
+        Olá,
+
+        Seu código de verificação é: {code}'''
+    html = f'''\
+        <html>
+            <body>
+                <p>Ol&aacute; {usuario},<br>
+                    Aqui est&aacute; o c&oacute;digo de verifica&ccedil;&atilde;o do Sistema de Criptografia para redefinir sua senha:<br>
+                    <p <span style="font-size:22px"><strong>{code}</strong></span></span></p>
+                </p>
+                <p><strong>Atenciosamente,</strong><br>
+                    <strong>Grupo 5</strong><br>
+                </p>
+            </body>
+        </html>
+        '''
+    part1 = MIMEText(text, 'plain')
+    part2 = MIMEText(html, 'html')
+    message.attach(part1)
+    message.attach(part2)
+
+    context  = ssl.create_default_context()
+
+    with smtplib.SMTP(smtp_server, port) as server:
+        server.ehlo()
+        server.starttls(context=context)
+        server.ehlo()
+        server.login(sender_email, password)
+        server.sendmail(sender_email, receiver_email, message.as_string())
+        code_db(usuario, code)
