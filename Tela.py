@@ -102,10 +102,7 @@ def main(page: Page):
                 mensagem_cifrada.value = None
                 chave.value = None
             else:
-                # showDialog(e, "Descriptografia incorreta.")
-                mensagem_cifrar.value = "Deixa de ser fofoqueiro."
-                mensagem_cifrada.value = None
-                chave.value = None
+                showDialog(e, "Chave e/ou Mensagem corrompida.\n\nCertifique se você inseriu a mensagem e/ou chave corretamente.\nCaso ambas estejam corretas e o erro persista, entre em contato\ncom o emissor da mensagem.")
             page.update()
 
     def btn_atualizar(e):
@@ -715,4 +712,4 @@ def main(page: Page):
     page.go(page.route)
 
 user.creat_db()
-flet.app(target=main, assets_dir="../../Privadao/Definitivo/Images")
+flet.app(target=main, assets_dir='../Sistema-Criptografia/Images')
