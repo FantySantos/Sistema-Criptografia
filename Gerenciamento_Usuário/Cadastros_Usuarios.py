@@ -125,8 +125,8 @@ def code_email(usuario, receiver_email):
     code = ''.join([str(random.randint(0, 9)) for qtd in range(6)])
     smtp_server  = "smtp.office365.com"
     port = 587
-    sender_email  = "sistema.criptografia@hotmail.com"
-    password = "602Nf#6j"
+    sender_email  = ""
+    password = ""
 
     message = MIMEMultipart("alternative")
     message["Subject"] = "Sistema de Criptografia: Redefinir senha"
